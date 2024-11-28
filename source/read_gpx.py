@@ -21,7 +21,7 @@ def read_gpx(filename, tracknr=0):
     times = [list() for _ in range(len(track.segments))]
     for i, segment in enumerate(track.segments):
         for point in segment.points:
-            points[i].append(Point(point.latitude, point.longitude))
+            points[i].append(Point(point.longitude, point.latitude))
             times[i].append(point.time_difference(segment.points[0]))
 
     return points, times

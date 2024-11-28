@@ -1,12 +1,11 @@
 import numpy as np
-from pyproj import CRS
-from shapely.geometry import LineString
-from shapely.lib import normalize
+from pyproj import CRS, Proj
+from pyproj.aoi import AreaOfInterest
+from pyproj.database import query_utm_crs_info
+from shapely.geometry import LineString, Point
 
 
 class track:
-
-    crs = CRS.from_string("EPSG:4326")
 
     def __init__(self, points, times):
         """
@@ -31,6 +30,26 @@ class track:
                 )
         self.points = points
         self.times = np.array(times)
+
+        # >>> obtain projection for the track
+        # boundary of the track
+        self.aoi = AreaOfInterest(
+            north_lat_degree=max([ee.y for e in self.points for ee in e]),
+            east_lon_degree=max([ee.x for e in self.points for ee in e]),
+            south_lat_degree=min([ee.y for e in self.points for ee in e]),
+            west_lon_degree=min([ee.x for e in self.points for ee in e]),
+        )
+
+        # CRS for the track
+        crs = CRS.from_epsg(
+            query_utm_crs_info(datum_name="WGS 84", area_of_interest=self.aoi)[
+                0
+            ].code
+        )
+
+        # projection for the track
+        self._projection = Proj(crs, preserve_units=False)
+        # <<< obtain projection for the track
 
     def segments(self):
         """
@@ -101,6 +120,20 @@ class track:
         res = ls.interpolate(frac, normalized=True)
         return res
 
+    def proj(self, segment, index):
+        """
+        Project a point onto a UTM projection
+
+        :param segment: Index of the considered segment
+        :param index: Index of the considered point
+        """
+        return Point(
+            self._projection(
+                self.points[segment][index].x,
+                self.points[segment][index].y,
+            )
+        )
+
     def distance(self, segment, start_index=0, end_index=-1):
         """
         Calculate the distance travelled along the track segment between
@@ -113,12 +146,12 @@ class track:
         """
         res = 0
         if start_index < 0:
-            start_index = len(self.times[segment]) + start_index
+            start_index = self.len(segment) + start_index
         if end_index < 0:
-            end_index = len(self.times[segment]) + end_index
+            end_index = self.len(segment) + end_index
         for index in range(start_index, end_index):
             ls = LineString(
-                [self.points[segment][index + 1], self.points[segment][index]]
+                [self.proj(segment, index + 1), self.proj(segment, index)]
             )
             res += ls.length
         return res

@@ -1,9 +1,14 @@
+from typing import no_type_check
+
+import matplotlib.pyplot as plt
+from pyproj import CRS, Proj
+from pyproj.aoi import AreaOfInterest
+from pyproj.database import query_utm_crs_info
+
+from source.plot_track import *
 from source.read_gpx import *
 from source.track import *
 
 test_track = track(*read_gpx("test_activity.gpx"))
 
-print(test_track.point_at_time(0, 6477))
-print(test_track.points[0][-2])
-
-print(test_track.distance(segment=0, start_index=-2, end_index=-1))
+plot_track(test_track)

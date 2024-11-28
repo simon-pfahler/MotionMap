@@ -5,8 +5,8 @@ This project will generate clean images of the streets you ran or cycled, where 
 It is currently a work in progress.
 
 ## To do
-- [ ] `track` object to read in gpx files and allow for basic operations on them
-- [ ] debugging function to plot a path
+- [x] `track` object to read in gpx files and allow for basic operations on them
+- [x] debugging function to plot a track
 - [ ] function to load street data for a particular area
 - [ ] function to plot street data
 - [ ] function to map a `track` onto street data
