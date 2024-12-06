@@ -60,15 +60,14 @@ class street_network:
         """
         return len(self.graph.edges)
 
-    def utm(self, index):
+    def utm(self, node_index):
         """
         Project a `Node`'s pos onto a UTM projection
 
-        :param segment: Index of the considered segment
-        :param index: Index of the considered point
+        :param node_index: Index of the considered point
         """
-        if "utm" not in self.graph.nodes[index].keys():
-            self.graph.nodes[index]["utm"] = self._projection(
-                *self.graph.nodes[index]["pos"]
+        if "utm" not in self.graph.nodes[node_index].keys():
+            self.graph.nodes[node_index]["utm"] = self._projection(
+                *self.graph.nodes[node_index]["pos"]
             )
-        return self.graph.nodes[index]["utm"]
+        return self.graph.nodes[node_index]["utm"]

@@ -1,4 +1,4 @@
-from source.plot_track import *
+from source.plot import *
 from source.read_gpx import *
 from source.street_network import *
 from source.track import *
@@ -27,6 +27,8 @@ print(
 
 print("test street network utm:", dresden.utm(test_key))
 
-plot_track(test_track)
+fig, ax = plot_street_network(dresden)
+
+plot_track(test_track, figax=(fig, ax))
 
 plt.show()
