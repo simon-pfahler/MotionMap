@@ -7,6 +7,7 @@ It is currently a work in progress.
 ## To do
 - [x] `track` object to read in gpx files and allow for basic operations on them
 - [x] debugging function to plot a track
-- [ ] function to load street data for a particular area
+- [x] function to load street data for a particular area
 - [ ] function to plot street data
 - [ ] function to map a `track` onto street data
+- [ ] function to import all tracks from garmin export
