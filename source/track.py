@@ -18,24 +18,17 @@ class track:
 
         # >>> obtain projection for the track
         # boundary of the track
-        self.aoi = AreaOfInterest(
-            north_lat_degree=max(
-                [g.nodes[i]["pos"][1] for g in self.graphs for i in g.nodes]
-            ),
-            east_lon_degree=max(
-                [g.nodes[i]["pos"][0] for g in self.graphs for i in g.nodes]
-            ),
-            south_lat_degree=min(
-                [g.nodes[i]["pos"][1] for g in self.graphs for i in g.nodes]
-            ),
-            west_lon_degree=min(
-                [g.nodes[i]["pos"][0] for g in self.graphs for i in g.nodes]
-            ),
-        )
+        self.bbox = [
+            min([g.nodes[i]["pos"][0] for g in self.graphs for i in g.nodes]),
+            max([g.nodes[i]["pos"][1] for g in self.graphs for i in g.nodes]),
+            max([g.nodes[i]["pos"][0] for g in self.graphs for i in g.nodes]),
+            min([g.nodes[i]["pos"][1] for g in self.graphs for i in g.nodes]),
+        ]
+        aoi = AreaOfInterest(*self.bbox)
 
         # CRS for the track
         crs = CRS.from_epsg(
-            query_utm_crs_info(datum_name="WGS 84", area_of_interest=self.aoi)[
+            query_utm_crs_info(datum_name="WGS 84", area_of_interest=aoi)[
                 0
             ].code
         )
@@ -133,7 +126,6 @@ class track:
             )
         return self.graphs[segment].nodes[index]["utm"]
 
-    # TODO continue here!!!
     def distance(self, segment, start_index=0, end_index=-1):
         """
         Calculate the distance travelled along the track segment between
