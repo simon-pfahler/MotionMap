@@ -1,43 +1,36 @@
+import networkx as nx
 import numpy as np
 from pyproj import CRS, Proj
 from pyproj.aoi import AreaOfInterest
 from pyproj.database import query_utm_crs_info
-from shapely.geometry import LineString, Point
 
 
 class track:
 
-    def __init__(self, points, times):
+    def __init__(self, graphs):
         """
         Create an object storing a track consisting of multiple sements
 
-        :param points: Coordinates
-            For each segment, this is a list of `shapely.geometry.Point`
-            objects.
-        :param times: Times
-            For each segment, this is a list of times from the starting time
-            in seconds.
+        :param graphs: Graphs of the track
+            This is a list of networkx `Graph`s for each track segment
         """
-        if len(points) != len(times):
-            raise ValueError(
-                "Coordinates and times have a different number of segments"
-            )
-        for i, (ce, te) in enumerate(zip(points, times)):
-            if len(ce) != len(te):
-                raise ValueError(
-                    f"Coordinates and times of segment {i} have a different "
-                    "number of points"
-                )
-        self.points = points
-        self.times = np.array(times)
+        self.graphs = graphs
 
         # >>> obtain projection for the track
         # boundary of the track
         self.aoi = AreaOfInterest(
-            north_lat_degree=max([ee.y for e in self.points for ee in e]),
-            east_lon_degree=max([ee.x for e in self.points for ee in e]),
-            south_lat_degree=min([ee.y for e in self.points for ee in e]),
-            west_lon_degree=min([ee.x for e in self.points for ee in e]),
+            north_lat_degree=max(
+                [g.nodes[i]["pos"][1] for g in self.graphs for i in g.nodes]
+            ),
+            east_lon_degree=max(
+                [g.nodes[i]["pos"][0] for g in self.graphs for i in g.nodes]
+            ),
+            south_lat_degree=min(
+                [g.nodes[i]["pos"][1] for g in self.graphs for i in g.nodes]
+            ),
+            west_lon_degree=min(
+                [g.nodes[i]["pos"][0] for g in self.graphs for i in g.nodes]
+            ),
         )
 
         # CRS for the track
@@ -57,7 +50,7 @@ class track:
 
         :return: number of segments of the track
         """
-        return len(self.times)
+        return len(self.graphs)
 
     def len(self, segment):
         """
@@ -67,7 +60,7 @@ class track:
 
         :return: number of datapoints of a segment
         """
-        return len(self.times[segment])
+        return len(self.graphs[segment])
 
     def index_at_time(self, segment, time, interpolate=False):
         """
@@ -82,58 +75,65 @@ class track:
 
         :return: (interpolated) index of the given time in the segment
         """
-        index = (np.abs(self.times[segment] - time)).argmin()
+        times = np.array([node["time"] for node in self.graphs[segment].nodes])
+        index = (np.abs(times - time)).argmin()
         if interpolate == False:
             return index
-        if self.times[segment][index] > time:
+        if self.graphs[segment].nodes[index]["time"] > time:
             index -= 1
-        index += (time - self.times[segment][index]) / (
-            self.times[segment][index + 1] - self.times[segment][index]
+        index += (time - self.graphs[segment].nodes[index]["time"]) / (
+            self.graphs[segment].nodes[index + 1]["time"]
+            - self.graphs[segment].nodes[index]["time"]
         )
         return index
 
-    def point_at_time(self, segment, time, interpolate=False):
+    def node_at_time(self, segment, time, interpolate=False):
         """
-        Get the interpolated coordinates of a given time in a segment.
+        Get the (interpolated) node of a given time in a segment.
 
         :param segment: Index of the considered segment
         :param time: Time in seconds from starting time of the segment
-        :param interpolate: Whether to interpolate the coordinates or not.
-            If `True`, the `Point` of the closest time is returned, if `False`,
-            the `Point` is interpolated between the `Point`s of two closest
+        :param interpolate: Whether to interpolate the node or not.
+            If `False`, the `Node` of the closest time is returned, if `True`,
+            the `Node` is interpolated between the `Node`s of two closest
             times.
             Defaults to `False`.
 
-        :return: interpolated coordinates of the given time in the segment
+        :return: (interpolated) node of the given time in the segment
         """
-        index = (np.abs(self.times[segment] - time)).argmin()
+        times = np.array([node["time"] for node in self.graphs[segment].nodes])
+        index = (np.abs(times - time)).argmin()
         if interpolate == False:
-            return self.points[segment][index]
-        if self.times[segment][index] > time:
+            return self.graphs[segment].nodes[index]
+        if self.graphs[segment].nodes[index]["time"] > time:
             index -= 1
-        frac = (time - self.times[segment][index]) / (
-            self.times[segment][index + 1] - self.times[segment][index]
+        prev_node = self.graphs[segment].nodes[index]
+        next_node = self.graphs[segment].nodes[index + 1]
+        frac = (time - prev_node["time"]) / (
+            next_node["time"] - prev_node["time"]
         )
-        ls = LineString(
-            [self.points[segment][index], self.points[segment][index + 1]]
+        interp_index = index + frac
+        interp_pos = (
+            prev_node["pos"][i]
+            + frac * (next_node["pos"][i] - prev_node["pos"][i])
+            for i in range(2)
         )
-        res = ls.interpolate(frac, normalized=True)
-        return res
+        return interp_index, {"pos": interp_pos, "time": time}
 
-    def proj(self, segment, index):
+    def utm(self, segment, index):
         """
-        Project a point onto a UTM projection
+        Project a `Node`'s pos onto a UTM projection
 
         :param segment: Index of the considered segment
         :param index: Index of the considered point
         """
-        return Point(
-            self._projection(
-                self.points[segment][index].x,
-                self.points[segment][index].y,
+        if "utm" not in self.graphs[segment].nodes[index].keys():
+            self.graphs[segment].nodes[index]["utm"] = self._projection(
+                *self.graphs[segment].nodes[index]["pos"]
             )
-        )
+        return self.graphs[segment].nodes[index]["utm"]
 
+    # TODO continue here!!!
     def distance(self, segment, start_index=0, end_index=-1):
         """
         Calculate the distance travelled along the track segment between
@@ -150,8 +150,7 @@ class track:
         if end_index < 0:
             end_index = self.len(segment) + end_index
         for index in range(start_index, end_index):
-            ls = LineString(
-                [self.proj(segment, index + 1), self.proj(segment, index)]
-            )
-            res += ls.length
+            utm_start = np.array(self.utm(segment, index))
+            utm_end = np.array(self.utm(segment, index + 1))
+            res += np.linalg.norm(utm_end - utm_start)
         return res

@@ -1,14 +1,15 @@
-from typing import no_type_check
-
-import matplotlib.pyplot as plt
-from pyproj import CRS, Proj
-from pyproj.aoi import AreaOfInterest
-from pyproj.database import query_utm_crs_info
-
 from source.plot_track import *
 from source.read_gpx import *
 from source.track import *
 
-test_track = track(*read_gpx("test_activity.gpx"))
+test_track = track(read_gpx("test_activity.gpx"))
+
+print("test access:", test_track.graphs[0].nodes[0])
+
+print("test utm:", test_track.utm(0, 0))
+
+print("test distance:", test_track.distance(0))
 
 plot_track(test_track)
+
+plt.show()
