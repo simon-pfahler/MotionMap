@@ -3,7 +3,7 @@ from source.read_gpx import *
 from source.street_network import *
 from source.track import *
 
-test_track = track(read_gpx("test_activity.gpx"))
+test_track = Track(read_gpx("test_activity.gpx"))
 
 print("test access:", test_track.graphs[0].nodes[0])
 
@@ -13,7 +13,7 @@ print("test access:", test_track.graphs[0].nodes[0])
 
 print("test distance:", test_track.distance(0))
 
-dresden = street_network(test_track.bbox)
+dresden = Street_network(test_track.bbox)
 
 print("test street network:", dresden.graph)
 

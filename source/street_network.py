@@ -5,7 +5,7 @@ from pyproj.aoi import AreaOfInterest
 from pyproj.database import query_utm_crs_info
 
 
-class street_network:
+class Street_network:
     def __init__(self, bbox):
         """
         Create an object storing a street network.

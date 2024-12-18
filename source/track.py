@@ -5,7 +5,7 @@ from pyproj.aoi import AreaOfInterest
 from pyproj.database import query_utm_crs_info
 
 
-class track:
+class Track:
 
     def __init__(self, graphs):
         """
