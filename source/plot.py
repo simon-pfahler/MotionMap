@@ -57,11 +57,13 @@ def plot_street_network(
     return fig, ax
 
 
-def plot_track(track, figax=None):
+def plot_track(track, figax=None, color="C3"):
     """
     Plot a track using matplotlib
 
     :param track: track to plot
+    :param color: color to use for the markers and edges
+        Default: "C3"
     """
     if figax == None:
         fig, ax = plt.subplots(1, 1)
@@ -75,8 +77,8 @@ def plot_track(track, figax=None):
             y,
             marker="o",
             markersize=4,
-            markerfacecolor="C3",
-            markeredgecolor="C3",
+            markerfacecolor=color,
+            markeredgecolor=color,
             zorder=3,
         )
     xlim = ax.get_xlim()

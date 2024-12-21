@@ -1,3 +1,4 @@
+from source.map_to_streets import *
 from source.plot import *
 from source.read_gpx import *
 from source.street_network import *
@@ -27,8 +28,13 @@ print(
 
 print("test street network utm:", dresden.utm(test_key))
 
+paths = map_track_to_street_network(test_track, dresden)
+cleaned_track = Track(paths)
+
 fig, ax = plot_street_network(dresden)
 
-plot_track(test_track, figax=(fig, ax))
+fig, ax = plot_track(test_track, figax=(fig, ax))
+
+fig, ax = plot_track(cleaned_track, figax=(fig, ax), color="C2")
 
 plt.show()
