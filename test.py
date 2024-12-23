@@ -3,6 +3,7 @@ from source.plot import *
 from source.read_gpx import *
 from source.street_network import *
 from source.track import *
+from source.utility import *
 
 test_track = Track(read_gpx("test_activity.gpx"))
 

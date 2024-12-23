@@ -1,6 +1,6 @@
 import networkx as nx
 
-from source.utility import get_closest_node
+from source.utility import min_distance_point_edge
 
 
 def map_track_to_street_network(track, street_network):
@@ -15,11 +15,6 @@ def map_track_to_street_network(track, street_network):
 
     for segment in range(track.segments()):
         # start with closest node
-        curr_node_index = get_closest_node(track.utm(0, 0), street_network)
-        paths[segment].add_node(
-            0,
-            pos=street_network.graph.nodes[curr_node_index]["pos"],
-            time=track.graphs[segment].nodes[0]["time"],
-        )
+        pass
 
     return paths
