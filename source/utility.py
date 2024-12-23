@@ -35,6 +35,18 @@ def min_distance_point_edge(point, edge_start, edge_end):
     ) / np.linalg.norm(edge_start_np - edge_end_np)
 
 
+def likelihood_edge(point, edge_start, edge_end):
+    """
+    Get the likelihood of a given edge to be associated to a point
+
+    :param point: UTM coordinates of the point
+    :param edge_start: UTM coordinates of the edge start
+    :param edge_end: UTM coordinates of the edge end
+    """
+
+    return np.exp(-min_distance_point_edge(point, edge_start, edge_end) / 5)
+
+
 def get_closest_node(utm, street_network):
     """
     Find the closest node from a `Street_network` to some coordinates
