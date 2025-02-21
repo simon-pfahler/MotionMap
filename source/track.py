@@ -19,10 +19,10 @@ class Track:
         # >>> obtain projection for the track
         # boundary of the track
         self.bbox = [
-            min([g.nodes[i]["pos"][0] for g in self.graphs for i in g.nodes]),
-            max([g.nodes[i]["pos"][1] for g in self.graphs for i in g.nodes]),
-            max([g.nodes[i]["pos"][0] for g in self.graphs for i in g.nodes]),
-            min([g.nodes[i]["pos"][1] for g in self.graphs for i in g.nodes]),
+            min(g.nodes[i]["pos"][0] for g in self.graphs for i in g.nodes),
+            max(g.nodes[i]["pos"][1] for g in self.graphs for i in g.nodes),
+            max(g.nodes[i]["pos"][0] for g in self.graphs for i in g.nodes),
+            min(g.nodes[i]["pos"][1] for g in self.graphs for i in g.nodes),
         ]
         aoi = AreaOfInterest(*self.bbox)
 
