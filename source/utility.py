@@ -9,33 +9,27 @@ def min_distance_point_edge(point, edge_start, edge_end):
     :param edge_start: UTM coordinates of the edge start
     :param edge_end: UTM coordinates of the edge end
     """
-    point_np = np.array(point)
-    edge_start_np = np.array(edge_start)
-    edge_end_np = np.array(edge_end)
 
-    if (edge_start_np == edge_end_np).all():
-        return np.linalg.norm(point_np - edge_start_np)
+    x, y = point
+    x0, y0 = edge_start
+    x1, y1 = edge_end
 
-    edge_start_closest = (point_np[0] - edge_start_np[0]) * (
-        edge_end_np[0] - edge_start_np[0]
-    ) + (point_np[1] - edge_start_np[1]) * (
-        edge_end_np[1] - edge_start_np[1]
-    ) < 0
+    if x0 == x1 and y0 == y1:
+        return np.sqrt((x - x0) ** 2 + (y - y0) ** 2)
+
+    edge_start_closest = (x - x0) * (x1 - x0) + (y - y0) * (y1 - y0) < 0
+
     if edge_start_closest:
-        return np.linalg.norm(point_np - edge_start_np)
+        return np.sqrt((y - y0) ** 2 + (x - x0) ** 2)
 
-    edge_end_closest = (point_np[0] - edge_end_np[0]) * (
-        edge_start_np[0] - edge_end_np[0]
-    ) + (point_np[1] - edge_end_np[1]) * (edge_start_np[1] - edge_end_np[1]) < 0
+    edge_end_closest = (x - x1) * (x0 - x1) + (y - y1) * (y0 - y1) < 0
+
     if edge_end_closest:
-        return np.linalg.norm(point_np - edge_end_np)
+        return np.sqrt((y - y1) ** 2 + (x - x1) ** 2)
 
-    return np.abs(
-        (edge_end_np[1] - edge_start_np[1]) * point_np[0]
-        - (edge_end_np[0] - edge_start_np[0]) * point_np[1]
-        + edge_end_np[0] * edge_start_np[1]
-        - edge_start_np[1] * edge_end_np[0]
-    ) / np.linalg.norm(edge_start_np - edge_end_np)
+    return np.abs((y1 - y0) * x - (x1 - x0) * y + x1 * y0 - x0 * y1) / np.sqrt(
+        (y1 - y0) ** 2 + (x1 - x0) ** 2
+    )
 
 
 def likelihood_edge(point, edge_start, edge_end):
@@ -50,27 +44,22 @@ def likelihood_edge(point, edge_start, edge_end):
     return np.exp(-min_distance_point_edge(point, edge_start, edge_end) / 5)
 
 
-def probabilities_first_edge(point, street_network):
+def likelihoods_first_edge(point, street_network):
     """
-    Get the probabilities of all edges being the first edge
+    Get the likelihoods of all edges being the first edge
 
     :param point: UTM coordinates of the point
     :param street_network: `Street_network` object
     """
 
-    probabilities = dict()
-    Z = 0
+    likelihoods = dict()
 
     for edge in street_network.graph.edges():
         edge_start = street_network.utm(edge[0])
         edge_end = street_network.utm(edge[1])
-        probabilities[edge] = likelihood_edge(point, edge_start, edge_end)
-        Z += probabilities[edge]
+        likelihoods[edge] = likelihood_edge(point, edge_start, edge_end)
 
-    for edge in street_network.graph.edges():
-        probabilities[edge] /= Z
-
-    return probabilities
+    return likelihoods
 
 
 def get_closest_node(utm, street_network):
