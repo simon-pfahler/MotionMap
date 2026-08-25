@@ -36,20 +36,20 @@ def min_distance_point_edge(point, edge_start, edge_end):
     x1, y1 = edge_end
 
     if x0 == x1 and y0 == y1:
-        return np.sqrt((x - x0) ** 2 + (y - y0) ** 2)
+        return np.hypot(x - x0, y - y0)
 
     edge_start_closest = (x - x0) * (x1 - x0) + (y - y0) * (y1 - y0) < 0
 
     if edge_start_closest:
-        return np.sqrt((y - y0) ** 2 + (x - x0) ** 2)
+        return np.hypot(y - y0, x - x0)
 
     edge_end_closest = (x - x1) * (x0 - x1) + (y - y1) * (y0 - y1) < 0
 
     if edge_end_closest:
-        return np.sqrt((y - y1) ** 2 + (x - x1) ** 2)
+        return np.hypot(y - y1, x - x1)
 
-    return np.abs((y1 - y0) * x - (x1 - x0) * y + x1 * y0 - x0 * y1) / np.sqrt(
-        (y1 - y0) ** 2 + (x1 - x0) ** 2
+    return np.abs((y1 - y0) * x - (x1 - x0) * y + x1 * y0 - x0 * y1) / np.hypot(
+        y1 - y0, x1 - x0
     )
 
 
@@ -62,10 +62,7 @@ def log_likelihood_edge(point, edge_start, edge_end):
     :param edge_end: UTM coordinates of the edge end
     """
 
-    res = -min_distance_point_edge(point, edge_start, edge_end) / 5
-    if res > 0:
-        raise ValueError(f"Distance was negative! ({-5*res})")
-    return res
+    return -min_distance_point_edge(point, edge_start, edge_end) / 5
 
 
 def log_likelihoods_first_edge(point, street_network):
