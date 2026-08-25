@@ -81,21 +81,39 @@ def map_track_to_street_network(track, street_network):
         plt.colorbar()
         plt.show()
 
-        found_edges = np.zeros(P.shape[0], dtype=int)
-        found_edges[-1] = np.argmax(P[-1])
+        found_edges = list()
+        found_edges.append(int(np.argmax(P[-1])))
         for track_index in reversed(range(P.shape[0] - 1)):
-            found_edges[track_index] = Q[track_index + 1][
-                found_edges[track_index + 1]
-            ]
-
-        print(found_edges)
+            if Q[track_index + 1][found_edges[-1]] == found_edges[-1]:
+                continue
+            found_edges.append(int(Q[track_index + 1][found_edges[-1]]))
 
         graph = nx.Graph()
-        for edge_index in found_edges:
-            edge = edgelist[edge_index]
-            graph.add_node(edge[0], **street_network.graph.nodes[edge[0]])
-            graph.add_node(edge[1], **street_network.graph.nodes[edge[1]])
-            graph.add_edge(edge[0], edge[1])
+        first_edge = edgelist[found_edges[0]]
+        if first_edge[1] in edgelist[found_edges[1]]:
+            graph.add_node(0, **street_network.graph.nodes[first_edge[0]])
+            graph.add_node(1, **street_network.graph.nodes[first_edge[1]])
+        else:
+            graph.add_node(0, **street_network.graph.nodes[first_edge[0]])
+            graph.add_node(1, **street_network.graph.nodes[first_edge[1]])
+        offset = 0
+        for edge_index_index in range(1, len(found_edges)):
+            edge = edgelist[found_edges[edge_index_index]]
+            if edge[0] in edgelist[found_edges[edge_index_index - 1]]:
+                graph.add_node(
+                    edge_index_index + 1 - offset,
+                    **street_network.graph.nodes[edge[1]],
+                )
+            elif edge[1] in edgelist[found_edges[edge_index_index - 1]]:
+                graph.add_node(
+                    edge_index_index + 1 - offset,
+                    **street_network.graph.nodes[edge[0]],
+                )
+            else:
+                offset += 1
+                print(f"Removing dangling edge {edge}")
+        for i in range(len(graph.nodes()) - 1):
+            graph.add_edge(i, i + 1)
 
         paths.append(graph)
 
