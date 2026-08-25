@@ -17,7 +17,7 @@ class Street_network:
 
         self.graph = nx.Graph(
             osmnx.graph_from_bbox(
-                (bbox),
+                (bbox[0], bbox[3], bbox[2], bbox[1]),
                 network_type="all",
                 simplify=True,
                 retain_all=True,

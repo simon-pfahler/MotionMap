@@ -29,10 +29,26 @@ print(
 
 print("test street network utm:", dresden.utm(test_key))
 
-paths = map_track_to_street_network(test_track, dresden)
-cleaned_track = Track(paths)
+cleaned_track = map_track_to_street_network(test_track, dresden)
 
-fig, ax = plot_street_network(dresden)
+
+log_likelihoods = np.zeros(len(test_track.graphs[0].nodes))
+for index in range(test_track.len(0)):
+    log_likelihoods[index] = log_likelihood_edge(
+        test_track.utm(0, index),
+        cleaned_track.utm(0, index),
+        cleaned_track.utm(0, index + 1),
+    )
+
+plt.plot(log_likelihoods)
+plt.axhline(-4, c="r")
+plt.xlabel("Node index")
+plt.ylabel("distance/5m")
+plt.show()
+
+# fig, ax = plot_street_network(dresden)
+
+fig, ax = plt.subplots(1, 1)
 
 fig, ax = plot_track(test_track, figax=(fig, ax))
 

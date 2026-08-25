@@ -43,34 +43,53 @@ def min_distance_point_edge(point, edge_start, edge_end):
     )
 
 
-def likelihood_edge(point, edge_start, edge_end):
+def log_likelihood_edge(point, edge_start, edge_end):
     """
-    Get the likelihood of a given edge to be associated to a point
+    Get the log-likelihood of a given edge to be associated to a point
 
     :param point: UTM coordinates of the point
     :param edge_start: UTM coordinates of the edge start
     :param edge_end: UTM coordinates of the edge end
     """
 
-    return -min_distance_point_edge(point, edge_start, edge_end) / 5
+    res = -min_distance_point_edge(point, edge_start, edge_end) / 5
+    if res > 0:
+        raise ValueError(f"Distance was negative! ({-5*res})")
+    return res
 
 
-def likelihoods_first_edge(point, street_network):
+def log_likelihoods_first_edge(point, street_network):
     """
-    Get the likelihoods of all edges being the first edge
+    Get the log-likelihoods of all edges being the first edge
 
     :param point: UTM coordinates of the point
     :param street_network: `Street_network` object
     """
 
-    likelihoods = dict()
+    log_likelihoods = dict()
+    max_ll = -np.inf
 
     for edge in street_network.graph.edges():
         edge_start = street_network.utm(edge[0])
         edge_end = street_network.utm(edge[1])
-        likelihoods[edge] = likelihood_edge(point, edge_start, edge_end)
+        log_likelihoods[edge] = log_likelihood_edge(point, edge_start, edge_end)
+        if log_likelihoods[edge] > max_ll:
+            max_ll = log_likelihoods[edge]
 
-    return likelihoods
+    for edge in street_network.graph.edges():
+        log_likelihoods[edge] -= max_ll
+
+    return log_likelihoods
+
+
+def get_neighboring_edges(street_network, edge):
+    return list(
+        set(
+            [edge]
+            + list(street_network.graph.edges(edge[0]))
+            + list(street_network.graph.edges(edge[1]))
+        )
+    )
 
 
 def get_closest_node(utm, street_network):

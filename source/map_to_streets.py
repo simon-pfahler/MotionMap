@@ -4,8 +4,9 @@ from source.plot import *
 from source.track import *
 from source.utility import (
     cosine_similarity,
-    likelihood_edge,
-    likelihoods_first_edge,
+    get_neighboring_edges,
+    log_likelihood_edge,
+    log_likelihoods_first_edge,
 )
 
 
@@ -29,99 +30,44 @@ def map_track_to_street_network(track, street_network):
         # of the possible (edge, previous_edge) pairs at all timepoints
         # for index 0, the keys are only edges, not tuples of edges, as there
         # is no previous edge
-        # TODO: Would it be sufficient to always use the current edge as key?
         Q = [dict() for _ in range(track.len(segment))]
 
         # current most probable edge list
         edges = [(None, None) for _ in range(track.len(segment))]
         # index of the next edge for the currently most probable path
         # (i.e. the first index i for which edges[i] == (None, None)
-        next_index = 0
+        at_index = 0
 
         # get quality values for starting nodes of the track
-        Q[0] = likelihoods_first_edge(track.utm(segment, 0), street_network)
+        Q[0] = log_likelihoods_first_edge(track.utm(segment, 0), street_network)
 
         # loop until we got the most probable complete path
-        while next_index < track.len(segment):
+        while at_index < track.len(segment):
 
-            # >>> DEBUG
-            if next_index > 0:
-                if next_index > 1:
-                    print(
-                        next_index,
-                        Q[next_index - 1][
-                            (edges[next_index - 1], edges[next_index - 2])
-                        ],
-                        Q[0][(518671757, 1752315539)],
-                    )
-                else:
-                    print(
-                        next_index,
-                        Q[next_index - 1][edges[next_index - 1]],
-                        Q[0][(518671757, 1752315539)],
-                    )
-                # build the graph from the edges
-                if debug:
-                    plt.cla()
-                    graph = nx.Graph()
-                    graph.add_node(0, **street_network.graph.nodes[edges[0][0]])
-                    for i in range(next_index):
-                        graph.add_node(
-                            i + 1, **street_network.graph.nodes[edges[i][1]]
-                        )
-                        graph.add_edge(i, i + 1)
-                    # fig, ax = plot_street_network(street_network)
-                    fig, ax = plot_track(track, figax=(fig, ax))
-                    fig, ax = plot_track(
-                        Track([graph]), figax=(fig, ax), color="C2"
-                    )
-                    utm1 = street_network.utm(edges[next_index - 1][0])
-                    utm2 = street_network.utm(edges[next_index - 1][1])
-                    ax.scatter(
-                        [utm1[0], utm2[0]],
-                        [utm1[1], utm2[1]],
-                        s=16,
-                        color="C2",
-                    )
-                    x0, y0 = street_network.utm(edges[0][0])
-                    x1, y1 = street_network.utm(edges[next_index - 1][0])
-                    ax.set_xlim(min(x0, x1) - 100, max(x0, x1) + 100)
-                    ax.set_ylim(min(y0, y1) - 100, max(y0, y1) + 100)
-                    plt.show()
-                    plt.pause(0.05)
-            # <<< DEBUG
-
-            # special case if next_index == 0
-            if next_index == 0:
+            # special case if at_index == 0
+            if at_index == 0:
                 next_edge = max(Q[0], key=Q[0].get)
                 # go one step forward
-                edges[next_index] = next_edge
-                next_index += 1
+                edges[at_index] = next_edge
+                at_index += 1
                 continue
 
-            # TODO: Check here if we should take a step backwards
-
+            # >>> get new Q values
             # proposal for next edge
             next_edge = (None, None)
 
             # shorthand for current and previous edge
-            curr_edge = edges[next_index - 1]
-            prev_edge = edges[next_index - 2]
+            curr_edge = edges[at_index - 1]
+            prev_edge = edges[at_index - 2]
 
-            # the possible next edges are the current edge and the neighboring
-            # edges at both ends of the current edge
-            relevant_edges = (
-                [curr_edge]
-                + list(street_network.graph.edges(curr_edge[0]))
-                + list(street_network.graph.edges(curr_edge[1]))
-            )
+            relevant_edges = get_neighboring_edges(street_network, curr_edge)
 
-            # add their quality values to Q[next_index]
-            max_likelihood = -np.inf
+            # add their quality values to Q[at_index]
+            max_log_likelihood = -np.inf
             for edge in relevant_edges:
-                if (edge, curr_edge) not in Q[next_index].keys():
-                    track_edge_start = track.utm(segment, next_index - 1)
-                    track_edge_end = track.utm(segment, next_index)
+                if (edge, curr_edge) not in Q[at_index].keys():
+                    track_edge_start = track.utm(segment, at_index - 1)
+                    track_edge_end = track.utm(segment, at_index)
                     track_vec = np.array(track_edge_end) - np.array(
                         track_edge_start
                     )
@@ -134,66 +80,67 @@ def map_track_to_street_network(track, street_network):
                     street_vec = np.array(street_edge_end) - np.array(
                         street_edge_start
                     )
-                    Q[next_index][(edge, curr_edge)] = likelihood_edge(
+                    Q[at_index][(edge, curr_edge)] = log_likelihood_edge(
                         track_edge_end,
                         street_edge_start,
                         street_edge_end,
                     )
-                if Q[next_index][(edge, curr_edge)] > max_likelihood:
+                if Q[at_index][(edge, curr_edge)] > max_log_likelihood:
                     next_edge = edge
-                    max_likelihood = Q[next_index][(edge, curr_edge)]
+                    max_log_likelihood = Q[at_index][(edge, curr_edge)]
 
-            # if no possible edge could be found, go back one step
-            # TODO: Is this even possible?
-            if next_edge == (None, None):
-                Q[next_index - 1][(curr_edge, edges[next_index - 2])] = 0
-                edges[next_index - 1] = (None, None)
-                next_index -= 1
-                continue
+            # add next edge to edges list
+            edges[at_index] = next_edge
 
-            # update the Q values of the previous step
-            Q_change = Q[next_index][(next_edge, curr_edge)]
-            if next_index == 1:
-                Q[0][curr_edge] += Q_change
-            else:
-                Q[next_index - 1][
-                    (curr_edge, edges[next_index - 2])
-                ] += Q_change
-            for edge in relevant_edges:
-                Q[next_index][(edge, curr_edge)] -= Q_change
-
-            # check if there is now an edge at time next_index-1 that has a
-            # higher Q value
-            go_back = False
-            if next_index == 1:
-                relevant_prev_edges = list(Q[0].keys())
-                for edge in list(Q[0].keys()):
-                    if Q[0][edge] > Q[0][curr_edge]:
-                        go_back = True
-                        break
-            else:
-                # relevant_prev_edges are defined analogously to relevant_edges
-                relevant_prev_edges = (
-                    [prev_edge]
-                    + list(street_network.graph.edges(prev_edge[0]))
-                    + list(street_network.graph.edges(prev_edge[1]))
+            # update Q values
+            for index in reversed(range(0, at_index)):
+                maxQ = -np.inf
+                relevant_edges = get_neighboring_edges(
+                    street_network, edges[index]
                 )
-                for edge in relevant_prev_edges:
-                    if (
-                        Q[next_index - 1][(edge, prev_edge)]
-                        > Q[next_index - 1][(curr_edge, prev_edge)]
-                    ):
-                        go_back = True
+                for edge in relevant_edges:
+                    if Q[index + 1][(edge, edges[index])] > maxQ:
+                        maxQ = Q[index + 1][(edge, edges[index])]
+                # print(maxQ)
+                for edge in relevant_edges:
+                    Q[index + 1][(edge, edges[index])] -= maxQ
+                    # print(
+                    #    f"{edge}: {Q[index + 1][(edge, edges[index])]+maxQ} -> {Q[index+1][(edge,edges[index])]}"
+                    # )
+                if index == 0:
+                    Q[index][edges[index]] += maxQ
+                else:
+                    Q[index][(edges[index], edges[index - 1])] += maxQ
 
-            # go back one step if last step is now non-optimal
-            if go_back:
-                edges[next_index - 1] = (None, None)
-                next_index -= 1
-                continue
+            # build new edges list
+            # print(f"Building current path (previously at {at_index})")
+            edges = [(None, None) for _ in range(track.len(segment))]
+            edges[0] = max(Q[0], key=Q[0].get)
+            at_index = 1
+            while True:
+                relevant_edges = get_neighboring_edges(
+                    street_network, edges[at_index - 1]
+                )
+                if (edges[at_index - 1], edges[at_index - 1]) not in Q[
+                    at_index
+                ].keys():
+                    break
+                next_edge = (None, None)
+                max_ll = -np.inf
+                for edge in relevant_edges:
+                    if Q[at_index][(edge, edges[at_index - 1])] > max_ll:
+                        max_ll = Q[at_index][(edge, edges[at_index - 1])]
+                        next_edge = edge
+                # if max_ll != 0 and at_index != 1:
+                #    print(f"Problem at {at_index}: max_ll={max_ll}")
+                #    input()
+                edges[at_index] = next_edge
+                at_index += 1
+                # print(f"{at_index}: {next_edge} (Q={max_ll})")
+                if at_index == track.len(segment):
+                    break
 
-            # go one step forward
-            edges[next_index] = next_edge
-            next_index += 1
+            print(f"Now at index {at_index}, edge={edges[at_index-1]}")
 
         # build the graph from the edges
         graph = nx.Graph()
@@ -205,4 +152,4 @@ def map_track_to_street_network(track, street_network):
         # append final path to all paths
         paths.append(graph)
 
-    return paths
+    return Track(paths)
