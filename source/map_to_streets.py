@@ -88,30 +88,44 @@ def map_track_to_street_network(track, street_network):
                 continue
             found_edges.append(int(Q[track_index + 1][found_edges[-1]]))
 
+        found_edges = found_edges[::-1]
+
+        cleaned_found_edges = list()
+        for index, edge_index in enumerate(found_edges):
+            edge = edgelist[edge_index]
+            if index == 0:
+                if edge[1] in edgelist[found_edges[index + 1]]:
+                    cleaned_found_edges.append((edge[0], edge[1]))
+                else:
+                    cleaned_found_edges.append((edge[1], edge[0]))
+                continue
+            if index == len(found_edges) - 1:
+                if edge[0] == cleaned_found_edges[-1][1]:
+                    cleaned_found_edges.append((edge[0], edge[1]))
+                else:
+                    cleaned_found_edges.append((edge[1], edge[0]))
+                continue
+            if (
+                edge[0] == cleaned_found_edges[-1][1]
+                and edge[1] in edgelist[found_edges[index + 1]]
+            ):
+                cleaned_found_edges.append((edge[0], edge[1]))
+            elif (
+                edge[1] == cleaned_found_edges[-1][1]
+                and edge[0] in edgelist[found_edges[index + 1]]
+            ):
+                cleaned_found_edges.append((edge[1], edge[0]))
+
         graph = nx.Graph()
-        first_edge = edgelist[found_edges[0]]
-        if first_edge[1] in edgelist[found_edges[1]]:
-            graph.add_node(0, **street_network.graph.nodes[first_edge[0]])
-            graph.add_node(1, **street_network.graph.nodes[first_edge[1]])
-        else:
-            graph.add_node(0, **street_network.graph.nodes[first_edge[0]])
-            graph.add_node(1, **street_network.graph.nodes[first_edge[1]])
-        offset = 0
-        for edge_index_index in range(1, len(found_edges)):
-            edge = edgelist[found_edges[edge_index_index]]
-            if edge[0] in edgelist[found_edges[edge_index_index - 1]]:
-                graph.add_node(
-                    edge_index_index + 1 - offset,
-                    **street_network.graph.nodes[edge[1]],
-                )
-            elif edge[1] in edgelist[found_edges[edge_index_index - 1]]:
-                graph.add_node(
-                    edge_index_index + 1 - offset,
-                    **street_network.graph.nodes[edge[0]],
-                )
-            else:
-                offset += 1
-                print(f"Removing dangling edge {edge}")
+        first_edge = cleaned_found_edges[0]
+        graph.add_node(0, **street_network.graph.nodes[first_edge[0]])
+        graph.add_node(1, **street_network.graph.nodes[first_edge[1]])
+        for edge_index_index in range(1, len(cleaned_found_edges)):
+            edge = cleaned_found_edges[edge_index_index]
+            graph.add_node(
+                edge_index_index + 1,
+                **street_network.graph.nodes[edge[1]],
+            )
         for i in range(len(graph.nodes()) - 1):
             graph.add_edge(i, i + 1)
 

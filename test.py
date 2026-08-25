@@ -35,7 +35,7 @@ cleaned_track = map_track_to_street_network(test_track, street_network)
 
 fig, ax = plt.subplots(1, 1)
 
-fig, ax = plot_track(test_track, figax=(fig, ax))
+# fig, ax = plot_track(test_track, figax=(fig, ax))
 
 fig, ax = plot_track(cleaned_track, figax=(fig, ax), color="C2")
 
