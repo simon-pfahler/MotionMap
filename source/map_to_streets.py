@@ -22,6 +22,19 @@ def map_track_to_street_network(track, street_network):
         (street_network.utm(e[0]), street_network.utm(e[1])) for e in edgelist
     ]
 
+    edge_neighbors_cache = {}
+
+    def get_edge_neighbors(edge_index):
+        if edge_index in edge_neighbors_cache:
+            return edge_neighbors_cache[edge_index]
+        edge = edgelist[edge_index]
+        neighbors = set()
+        for node in edge:
+            for e in street_network.graph.edges(node):
+                neighbors.add(edge_to_index[tuple(sorted(e))])
+        edge_neighbors_cache[edge_index] = neighbors
+        return neighbors
+
     for segment in range(track.segments()):
         # This is an implementation of the Viterbi algorithm
         P = -np.inf * np.ones((track.len(segment), street_network.nr_edges()))
@@ -34,25 +47,24 @@ def map_track_to_street_network(track, street_network):
             P[0, edge_index] = log_likelihood_edge(
                 utm_point, utm_edge_start, utm_edge_end
             )
+        P_dict = {
+            (0, edge_index): P[0, edge_index]
+            for edge_index in range(P.shape[1])
+        }
 
-        mask = np.zeros(P.shape)
+        nr_calculated = P.shape[1]
         while True:
-            track_index, edge_index = np.unravel_index(
-                np.argmax(P + mask), P.shape
-            )
-            mask[track_index, edge_index] = -np.inf
+            track_index, edge_index = max(P_dict, key=P_dict.get)
+            P_dict.pop((track_index, edge_index))
             print(
                 f"At {track_index}\t{edge_index} ({P[track_index,edge_index]})"
             )
             if track_index == P.shape[0] - 1:
                 break
+            nr_calculated += 1
 
             utm_next_point = track.utm(segment, track_index + 1)
-            next_edge_indices = set(
-                edge_to_index[tuple(sorted(e))]
-                for i in range(2)
-                for e in street_network.graph.edges(edgelist[edge_index][i])
-            )
+            next_edge_indices = get_edge_neighbors(edge_index)
             for next_edge_index in next_edge_indices:
                 utm_edge_start, utm_edge_end = edge_utms[next_edge_index]
                 new_ll = P[track_index, edge_index] + log_likelihood_edge(
@@ -60,13 +72,12 @@ def map_track_to_street_network(track, street_network):
                 )
                 if new_ll > P[track_index + 1, next_edge_index]:
                     P[track_index + 1, next_edge_index] = new_ll
+                    P_dict[(track_index + 1, next_edge_index)] = new_ll
                     Q[track_index + 1, next_edge_index] = edge_index
 
-        print(
-            f"Calculated {len(np.nonzero(np.nan_to_num(mask))[0])}/{P.shape[0]*P.shape[1]} points"
-        )
+        print(f"Calculated {nr_calculated}/{P.shape[0]*P.shape[1]} points")
 
-        plt.imshow(P)
+        plt.imshow(np.log(-P))
         plt.colorbar()
         plt.show()
 

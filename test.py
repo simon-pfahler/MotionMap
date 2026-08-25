@@ -5,7 +5,7 @@ from source.street_network import *
 from source.track import *
 from source.utility import *
 
-test_track = Track(read_gpx("test_activity_short.gpx"))
+test_track = Track(read_gpx("test_activity_long.gpx"))
 
 print("test access:", test_track.graphs[0].nodes[0])
 
@@ -31,9 +31,9 @@ print("test street network utm:", street_network.utm(test_key))
 
 cleaned_track = map_track_to_street_network(test_track, street_network)
 
-fig, ax = plot_street_network(street_network)
+# fig, ax = plot_street_network(street_network)
 
-# fig, ax = plt.subplots(1, 1)
+fig, ax = plt.subplots(1, 1)
 
 fig, ax = plot_track(test_track, figax=(fig, ax))
 

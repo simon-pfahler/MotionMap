@@ -12,16 +12,6 @@ def cosine_similarity(vec1, vec2):
     return np.dot(vec1, vec2) / np.linalg.norm(vec1) / np.linalg.norm(vec2)
 
 
-def distance_points(A, B):
-    """
-    Get the distance between two points
-
-    :param A: UTM coordinates of point A
-    :param B: UTM coordinates of point B
-    """
-    return np.linalg.norm(np.array(A) - np.array(B))
-
-
 def min_distance_point_edge(point, edge_start, edge_end):
     """
     Get the minimal distance between a point and an edge
@@ -62,7 +52,7 @@ def log_likelihood_edge(point, edge_start, edge_end):
     :param edge_end: UTM coordinates of the edge end
     """
 
-    return -min_distance_point_edge(point, edge_start, edge_end) / 5
+    return -np.exp(min_distance_point_edge(point, edge_start, edge_end) / 5)
 
 
 def log_likelihoods_first_edge(point, street_network):
