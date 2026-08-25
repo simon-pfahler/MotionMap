@@ -70,17 +70,32 @@ def plot_track(track, figax=None, color="C3"):
     else:
         fig, ax = figax
     for segment in range(track.segments()):
-        x, y = zip(*[track.utm(segment, i) for i in range(track.len(0))])
-
-        ax.plot(
-            x,
-            y,
-            marker="o",
-            markersize=4,
-            markerfacecolor=color,
-            markeredgecolor=color,
-            zorder=3,
+        x, y = zip(
+            *[track.utm(segment, i) for i in track.graphs[segment].nodes]
         )
+
+        for x, y in [
+            track.utm(segment, i) for i in track.graphs[segment].nodes
+        ]:
+            ax.scatter(
+                x,
+                y,
+                marker="o",
+                color=color,
+                zorder=3,
+            )
+        for edge in track.graphs[segment].edges:
+            ax.plot(
+                [
+                    track.utm(segment, edge[0])[0],
+                    track.utm(segment, edge[1])[0],
+                ],
+                [
+                    track.utm(segment, edge[0])[1],
+                    track.utm(segment, edge[1])[1],
+                ],
+                color=color,
+            )
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
     xmid = np.mean(xlim)
