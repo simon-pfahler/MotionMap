@@ -36,6 +36,14 @@ def map_track_to_street_network(track, street_network):
         return neighbors
 
     for segment in range(track.segments()):
+        track_momenta = [None] + [
+            (
+                track.utm(segment, i)[0] - track.utm(segment, i - 1)[0],
+                track.utm(segment, i)[1] - track.utm(segment, i - 1)[1],
+            )
+            for i in range(1, track.len(segment))
+        ]
+
         # This is an implementation of the Viterbi algorithm
         P = -np.inf * np.ones((track.len(segment), street_network.nr_edges()))
         Q = np.zeros((track.len(segment), street_network.nr_edges()), dtype=int)
@@ -68,7 +76,10 @@ def map_track_to_street_network(track, street_network):
             for next_edge_index in next_edge_indices:
                 utm_edge_start, utm_edge_end = edge_utms[next_edge_index]
                 new_ll = P[track_index, edge_index] + log_likelihood_edge(
-                    utm_next_point, utm_edge_start, utm_edge_end
+                    utm_next_point,
+                    utm_edge_start,
+                    utm_edge_end,
+                    momentum=track_momenta[track_index],
                 )
                 if new_ll > P[track_index + 1, next_edge_index]:
                     P[track_index + 1, next_edge_index] = new_ll

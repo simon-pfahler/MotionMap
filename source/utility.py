@@ -53,7 +53,7 @@ def min_distance_point_edge(point, edge_start, edge_end):
     )
 
 
-def log_likelihood_edge(point, edge_start, edge_end):
+def log_likelihood_edge(point, edge_start, edge_end, momentum=None):
     """
     Get the log-likelihood of a given edge to be associated to a point
 
@@ -62,7 +62,16 @@ def log_likelihood_edge(point, edge_start, edge_end):
     :param edge_end: UTM coordinates of the edge end
     """
 
-    return -np.exp(min_distance_point_edge(point, edge_start, edge_end) / 5)
+    res = -np.exp(min_distance_point_edge(point, edge_start, edge_end) / 5)
+
+    if momentum is not None:
+        vec_edge = np.array(
+            [edge_end[0] - edge_start[0], edge_end[1] - edge_start[1]]
+        )
+        abs_cos_sim = np.abs(cosine_similarity(np.array(momentum), vec_edge))
+        res += min(2000 * (abs_cos_sim - 0.5), 0)
+
+    return res
 
 
 def log_likelihoods_first_edge(point, street_network):
