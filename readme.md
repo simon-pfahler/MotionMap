@@ -9,10 +9,9 @@ It is currently a work in progress.
 - [x] debugging function to plot a track
 - [x] function to load street data for a particular area
 - [x] function to plot street data
-- [ ] function to map a `track` onto street data
+- [x] function to map a `track` onto street data
     - [x] function to calculate minimal distance between nodes
     - [x] function to calculate likelihood of edge-point pair
     - [x] function to get probabilities of edges being first edge
-    - [ ] clean up street network so there are no duplicate edges or nodes on top of each other
-    - [ ] step along in the progression
-- [ ] function to import all tracks from garmin export
+    - [ ] improve log_likelihood to calculate actual minimal distance to edge when simplify is True, so we get less edges while maintaining accuracy.
+- [ ] function to import all tracks from intervals.icu
