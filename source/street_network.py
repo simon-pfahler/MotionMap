@@ -19,7 +19,7 @@ class Street_network:
             osmnx.graph_from_bbox(
                 (bbox[0], bbox[3], bbox[2], bbox[1]),
                 network_type="all",
-                simplify=True,
+                simplify=False,
                 retain_all=True,
                 truncate_by_edge=True,
             )
