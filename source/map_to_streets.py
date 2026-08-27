@@ -64,9 +64,6 @@ def map_track_to_street_network(track, street_network):
         while True:
             track_index, edge_index = max(P_dict, key=P_dict.get)
             P_dict.pop((track_index, edge_index))
-            print(
-                f"At {track_index}\t{edge_index} ({P[track_index,edge_index]})"
-            )
             if track_index == P.shape[0] - 1:
                 break
             nr_calculated += 1
@@ -85,12 +82,6 @@ def map_track_to_street_network(track, street_network):
                     P[track_index + 1, next_edge_index] = new_ll
                     P_dict[(track_index + 1, next_edge_index)] = new_ll
                     Q[track_index + 1, next_edge_index] = edge_index
-
-        print(f"Calculated {nr_calculated}/{P.shape[0]*P.shape[1]} points")
-
-        plt.imshow(np.log(-P))
-        plt.colorbar()
-        plt.show()
 
         found_edges = list()
         found_edges.append(int(np.argmax(P[-1])))

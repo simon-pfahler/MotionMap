@@ -9,7 +9,9 @@ def cosine_similarity(vec1, vec2):
     :param vec2: UTM coordinates of the second vector
     """
 
-    return np.dot(vec1, vec2) / np.linalg.norm(vec1) / np.linalg.norm(vec2)
+    return np.dot(vec1, vec2) / (
+        np.linalg.norm(vec1) * np.linalg.norm(vec2) + 1e-8
+    )
 
 
 def distance_points(A, B):

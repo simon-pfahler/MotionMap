@@ -4,6 +4,8 @@ from pyproj import CRS, Proj
 from pyproj.aoi import AreaOfInterest
 from pyproj.database import query_utm_crs_info
 
+from .utility import distance_points
+
 
 class Track:
 
@@ -19,10 +21,14 @@ class Track:
         # >>> obtain projection for the track
         # boundary of the track
         self.bbox = [
-            min(g.nodes[i]["pos"][0] for g in self.graphs for i in g.nodes),
-            min(g.nodes[i]["pos"][1] for g in self.graphs for i in g.nodes),
-            max(g.nodes[i]["pos"][0] for g in self.graphs for i in g.nodes),
-            max(g.nodes[i]["pos"][1] for g in self.graphs for i in g.nodes),
+            min(g.nodes[i]["pos"][0] for g in self.graphs for i in g.nodes)
+            - 0.001,
+            min(g.nodes[i]["pos"][1] for g in self.graphs for i in g.nodes)
+            - 0.001,
+            max(g.nodes[i]["pos"][0] for g in self.graphs for i in g.nodes)
+            + 0.001,
+            max(g.nodes[i]["pos"][1] for g in self.graphs for i in g.nodes)
+            + 0.001,
         ]
         aoi = AreaOfInterest(*self.bbox)
 
@@ -146,3 +152,66 @@ class Track:
             utm_end = np.array(self.utm(segment, index + 1))
             res += np.linalg.norm(utm_end - utm_start)
         return res
+
+    def filled(self, max_distance=10):
+        """
+        Fill up holes in the track such that adjacent nodes are closer.
+
+        :param max_distance: Maximum distance between adjacent nodes
+        """
+
+        filled_graphs = list()
+
+        for segment in range(self.segments()):
+            new_graph = nx.Graph()
+
+            self.utm(segment, 0)
+            new_graph.add_node(0, **self.graphs[segment].nodes[0])
+
+            old_index = 1
+            new_index = 0
+            while old_index < self.len(segment):
+                # Either add a node from the original graph
+                # or add an intermediate node
+                dist = distance_points(
+                    new_graph.nodes[new_index]["utm"],
+                    self.utm(segment, old_index),
+                )
+                if dist > max_distance:
+                    nr_intermediate_nodes = int(dist / max_distance)
+                    utm = new_graph.nodes[new_index]["utm"]
+                    vec = (
+                        (self.utm(segment, old_index)[0] - utm[0])
+                        / (nr_intermediate_nodes + 1),
+                        (self.utm(segment, old_index)[1] - utm[1])
+                        / (nr_intermediate_nodes + 1),
+                    )
+                    time = new_graph.nodes[new_index]["time"]
+                    timedelta = (
+                        self.graphs[segment].nodes[old_index]["time"] - time
+                    ) / (nr_intermediate_nodes + 1)
+                    for i in range(1, nr_intermediate_nodes + 1):
+                        lat, lon = self._projection(
+                            utm[0] + i * vec[0],
+                            utm[1] + i * vec[1],
+                            inverse=True,
+                        )
+                        new_index += 1
+                        new_graph.add_node(
+                            new_index,
+                            pos=(lat, lon),
+                            utm=(utm[0] + i * vec[0], utm[1] + i * vec[1]),
+                            time=time + i * timedelta,
+                        )
+                new_index += 1
+                new_graph.add_node(
+                    new_index, **self.graphs[segment].nodes[old_index]
+                )
+                old_index += 1
+
+            for i in range(new_index):
+                new_graph.add_edge(i, i + 1)
+
+            filled_graphs.append(new_graph)
+
+        return Track(filled_graphs)
