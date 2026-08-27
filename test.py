@@ -8,7 +8,7 @@ from source.street_network import *
 from source.track import *
 from source.utility import *
 
-test_track = Track(read_gpx(sys.argv[1])).filled()
+test_track = Track(read_gpx(sys.argv[1])).filled(20)
 
 street_network = Street_network(test_track.bbox)
 
@@ -27,8 +27,7 @@ print(f"Mapping took {end_time-start_time:.2f}s")
 
 # fig, ax = plot_street_network(street_network)
 fig, ax = plt.subplots(1, 1)
-
-fig, ax = plot_track(test_track, figax=(fig, ax))
+# fig, ax = plot_track(test_track, figax=(fig, ax))
 
 fig, ax = plot_track(mapped_track, figax=(fig, ax), color="C2")
 

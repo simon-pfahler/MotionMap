@@ -24,8 +24,31 @@ def read_gpx(filename, tracknr=0):
                 j,
                 pos=(point.longitude, point.latitude),
                 time=point.time_difference(segment.points[0]),
+                node_id=point.name,
             )
             if j > 0:
                 graphs[i].add_edge(j - 1, j, color="blue")
 
     return graphs
+
+
+def write_gpx(graphs, filename):
+    gpx = gpxpy.gpx.GPX()
+    track = gpxpy.gpx.GPXTrack()
+    gpx.tracks.append(track)
+
+    for graph in graphs:
+        segment = gpxpy.gpx.GPXTrackSegment()
+        track.segments.append(segment)
+
+        for _, data in sorted(graph.nodes(data=True)):
+            lon, lat = data["pos"]
+            node_id = data["node_id"]
+            segment.points.append(
+                gpxpy.gpx.GPXTrackPoint(
+                    latitude=lat, longitude=lon, name=str(node_id)
+                )
+            )
+
+    with open(filename, "w") as f:
+        f.write(gpx.to_xml())

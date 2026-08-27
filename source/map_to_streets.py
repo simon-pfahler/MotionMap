@@ -63,6 +63,8 @@ def map_track_to_street_network(track, street_network):
         nr_calculated = P.shape[1]
         while True:
             track_index, edge_index = max(P_dict, key=P_dict.get)
+            if P_dict[(track_index, edge_index)] in (np.nan, -np.inf, np.inf):
+                raise ValueError(f"Path mapping failed!")
             P_dict.pop((track_index, edge_index))
             if track_index == P.shape[0] - 1:
                 break
@@ -120,13 +122,22 @@ def map_track_to_street_network(track, street_network):
 
         graph = nx.Graph()
         first_edge = cleaned_found_edges[0]
-        graph.add_node(0, **street_network.graph.nodes[first_edge[0]])
-        graph.add_node(1, **street_network.graph.nodes[first_edge[1]])
+        graph.add_node(
+            0,
+            **street_network.graph.nodes[first_edge[0]],
+            node_id=first_edge[0],
+        )
+        graph.add_node(
+            1,
+            **street_network.graph.nodes[first_edge[1]],
+            node_id=first_edge[1],
+        )
         for edge_index_index in range(1, len(cleaned_found_edges)):
             edge = cleaned_found_edges[edge_index_index]
             graph.add_node(
                 edge_index_index + 1,
                 **street_network.graph.nodes[edge[1]],
+                node_id=edge[1],
             )
         for i in range(len(graph.nodes()) - 1):
             graph.add_edge(i, i + 1)
