@@ -1,0 +1,12 @@
+# Privacy Policy
+
+## Third-Party Services
+MotionMap uses intervals.icu for activity GPX data retrieval and OpenStreetMaps for retrieval of street networks.
+Each service operates under its own privacy policy.
+We only share the minimum data necessary for each integration to function.
+
+## Data Storage
+All information is stored on your personal device.
+
+## Contact
+For privacy inquiries, contact: MotionMap@pfahler.online
