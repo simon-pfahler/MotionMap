@@ -1,3 +1,4 @@
+%! TeX engine = LuaLaTeX
 \DocumentMetadata{lang=en-US}
 \documentclass[notitlepage]{scrarticle}
 
@@ -124,23 +125,23 @@ Considering this as well, we get
 \section{Likelihood of a given edge}\label{sec:likelihood_of_edge}
 As we want to obtain the most probable path in the street network, we need to define a probability of a certain edge being the correct one to identify a track point with.
 We do this by considering the minimal distance between a point $p$ and an edge $e$, denoted $\ell(p,e)$.
-The probability of an edge $e$ being the correct edge for point $p$ is then defined to decay exponentially with $\ell(p,e)$, giving probabilities
+The probability of an edge $e$ being the correct edge for point $p$ is then defined to decay exponentially with $\exp\big(\ell(p,e)\big)$, giving probabilities
 %
 \begin{align*}
-	P(e|p) = \left(\sum_{\text{edges }e'}\exp\big(-\frac{\ell(p,e')}{5\unit{\metre}}\big)\right)^{-1}\exp\big(-\frac{\ell(p,e)}{5\unit{\metre}}\big)
-	=Z\exp\big(-\frac{\ell(p,e)}{5\unit{\metre}}\big)\,,
+	P(e|p) & = \left(\sum_{\text{edges }e'}\exp\Big(-\exp\big(\frac{\ell(p,e')}{5\unit{\metre}}\big)\Big)\right)^{-1}\exp\Big(-\exp\big(\frac{\ell(p,e)}{5\unit{\metre}}\big)\Big) \\
+	       & = Z\exp\Big(-\exp\big(\frac{\ell(p,e)}{5\unit{\metre}}\big)\Big)\,,
 \end{align*}
 with partition function $Z$.\footnote{The denominator $5\unit{\metre}$ has been introduced to account for the rough accuracy of GPS, and to obtain a dimensionless quantity in the exponent.}
-In practice, $Z$ is often hard to calculate, which is why we only work with the likelihood
+In practice, $Z$ is often hard to calculate, which is why we only work with the log-likelihood
 %
 \begin{align*}
-	L(p|e) = \exp\big(-\frac{\ell(p|e)}{5\unit{\metre}}\big)\,.
+	LL(p|e) = -\exp\big(\frac{\ell(p|e)}{5\unit{\metre}}\big)\,.
 \end{align*}
 
-Using likelihoods, we can obtain likelihood ratios, meaning that for point $p$, edge $e_1$ is $k$-times as likely as edge $e_2$ if
+Using log-likelihoods, we can obtain likelihood ratios, meaning that for point $p$, edge $e_1$ is $k$-times as likely as edge $e_2$ if
 %
 \begin{align*}
-	\frac{L(p|e_1)}{L(p|e_2)}=k
+	\exp\big(LL(p|e_1)-LL(p|e_2)\big)=k\,.
 \end{align*}
 
 \section{Exploiting the graph structure}
@@ -199,10 +200,10 @@ For this, we use the probabilities obtained for starting edges, and the weights 
 
 Formally, we can consider a path $\mathcal P=\left(e_1,\ldots,e_n\right)$ and a track $\mathcal T=\left(p_1,\ldots,p_m\right)$.
 Here, a path consists of edges, and a track consists of points.
-The likelihood of the track $\mathcal T$ under path $\mathcal P$ is then defined through
+The log-likelihood of the track $\mathcal T$ under path $\mathcal P$ is then defined through
 %
 \begin{align*}
-	L(\mathcal P|\mathcal T)=\prod_{i=1}^nL(e_i|p_i)
+	LL(\mathcal P|\mathcal T)=\sum_{i=1}^nLL(e_i|p_i)
 \end{align*}
 
 Note that we define a likelihood even if $\mathcal P$ and $\mathcal T$ have different lengths.
